@@ -61,8 +61,12 @@ export default function Home() {
       const sanitizedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
       const urlObject = new URL(sanitizedUrl);
       const parts = urlObject.pathname.split('/');
-      const key = parts.pop();
-      return /^\d+$/.test(key || '') ? key : null;
+      const keyCandidate = parts.pop(); // keyCandidate can be string | undefined
+
+      if (typeof keyCandidate === 'string' && /^\d+$/.test(keyCandidate)) {
+        return keyCandidate;
+      }
+      return null;
     } catch (error) {
       return null;
     }

@@ -15,7 +15,14 @@ export async function GET(
   const targetUrl = `https://www.kyodemo.net/sdemo/b/e_e_liveedge/?bs=hi&k=${userId}`;
 
   try {
-    const response = await fetch(targetUrl);
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+        'Referer': 'https://www.kyodemo.net/', // Referer to the target domain
+        'Accept-Language': 'ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+      },
+    });
 
     if (!response.ok) {
       const errorText = await response.text();

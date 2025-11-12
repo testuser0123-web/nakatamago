@@ -47,12 +47,21 @@ export function performHAC(ids: string[], distanceMatrix: number[][]): string[][
     method: 'ward',
   });
 
-  // ダミーの距離行列では意味のあるクラスタ数を指定しにくいので、
-  // とりあえず全IDを1つのクラスタとして扱うフォールバックを追加
   let assignments: number[];
   try {
-    // 少なくとも1つのクラスタを形成するように試みる
-    assignments = tree.group(1).map(a => a.cluster);
+    // tree.group(1)が配列を返すか、単一のオブジェクトを返すか不明なため、両方に対応
+    const groupResult = tree.group(1); // numClustersを1に固定
+    if (Array.isArray(groupResult)) {
+      // groupResultが配列の場合 (各データポイントのクラスタ割り当てオブジェクトの配列)
+      assignments = groupResult.map(a => a.cluster);
+    } else if (typeof groupResult === 'object' && groupResult !== null) {
+      // groupResultが単一のクラスタオブジェクトの場合 (例: { cluster: 0, children: [...] })
+      // この場合、全てのIDをそのクラスタに割り当てる
+      assignments = ids.map(() => (groupResult as any).cluster || 0);
+    } else {
+      // 予期せぬ形式の場合、全てをクラスタ0に割り当てる
+      assignments = ids.map(() => 0);
+    }
   } catch (e) {
     // エラーが発生した場合（例: データが少なすぎるなど）は、全てを1つのクラスタとする
     assignments = ids.map(() => 0);

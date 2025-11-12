@@ -126,12 +126,14 @@ export default function Home() {
     addLog({ type: 'info', content: '[CMD] 階層的クラスタリング(HAC)を実行中...'});
     await sleep(500);
     const hacResult = performHAC(ids, matrix);
+    console.log('HAC Result (before addLog):', hacResult); // DEBUG LOG
     addLog({ type: 'hac', content: hacResult });
     
     await sleep(500);
     addLog({ type: 'info', content: '[CMD] DBSCANクラスタリングを実行中...'});
     await sleep(500);
     const dbscanResult = performDBSCAN(ids, matrix);
+    console.log('DBSCAN Result (before addLog):', dbscanResult); // DEBUG LOG
     addLog({ type: 'dbscan', content: dbscanResult });
 
     setClusteringPerformed(true);
@@ -214,25 +216,27 @@ const RenderClusters = ({ title, clusters }: { title: string; clusters: string[]
 
   useEffect(() => {
     setVisibleClusters([]); // clustersプロパティが変更されたらリセット
-    if (clusters.length > 0) {
-      let i = 0;
-      const interval = setInterval(() => {
-        if (i < clusters.length) {
-          setVisibleClusters(prev => [...prev, clusters[i]]);
-          i++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 200); // 各クラスタ間の表示遅延
-      return () => clearInterval(interval); // コンポーネントのアンマウント時にクリア
-    }
+    if (clusters.length === 0) return;
+
+    let timeoutId: NodeJS.Timeout;
+    const animateClusters = (index: number) => {
+      if (index < clusters.length) {
+        setVisibleClusters(prev => [...prev, clusters[index]]);
+        timeoutId = setTimeout(() => animateClusters(index + 1), 200); // 次のクラスタを表示
+      }
+    };
+
+    // 最初のクラスタ表示を開始
+    timeoutId = setTimeout(() => animateClusters(0), 200); 
+
+    return () => clearTimeout(timeoutId); // コンポーネントのアンマウント時やclusters変更時にタイマーをクリア
   }, [clusters]);
 
   return (
     <div>
       <p>[OK] {title}: {clusters.length}個のクラスタを検出</p>
       <div className="p-2 space-y-2">
-        {visibleClusters.map((cluster, cIdx) => (
+        {visibleClusters.filter(Boolean).map((cluster, cIdx) => (
           <div key={cIdx}>
             <p className="text-sm text-gray-400">Cluster #{cIdx + 1} ({cluster.length} items)</p>
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs border-l-2 border-gray-700 pl-2">

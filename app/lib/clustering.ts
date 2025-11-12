@@ -32,6 +32,17 @@ function formatClusters(ids: string[], assignments: number[]): string[][] {
   return groupedClusters;
 }
 
+function getLeafIndices(cluster: any): number[] {
+  if (cluster.isLeaf) {
+    return [cluster.index];
+  }
+  let indices: number[] = [];
+  for (const child of cluster.children) {
+    indices = indices.concat(getLeafIndices(child));
+  }
+  return indices;
+}
+
 /**
  * 階層的クラスタリング(HAC)を実行します。
  * @param ids - IDの配列
@@ -41,37 +52,32 @@ function formatClusters(ids: string[], assignments: number[]): string[][] {
 export function performHAC(ids: string[], distanceMatrix: number[][]): string[][] {
   if (ids.length === 0) return [];
   
-  const dataset = ids.map((_, i) => [i]);
-  const tree = agnes(dataset, {
-    distanceFunction: (a, b) => distanceMatrix[a[0]][b[0]],
+  // agnesに直接距離行列を渡し、methodでリンケージを指定する
+  const tree = agnes(distanceMatrix, {
     method: 'ward',
   });
 
   let assignments: number[];
   try {
-    // tree.group(1)が配列を返すか、単一のオブジェクトを返すか不明なため、両方に対応
-    const groupResult = tree.group(1); // numClustersを1に固定
-    if (Array.isArray(groupResult)) {
-      // groupResultが配列の場合 (各データポイントのクラスタ割り当てオブジェクトの配列)
-      assignments = groupResult.map(a => a.cluster);
-    } else if (typeof groupResult === 'object' && groupResult !== null) {
-      // groupResultが単一のクラスタオブジェクトの場合 (例: { cluster: 0, children: [...] })
-      // この場合、全てのIDをそのクラスタに割り当てる
-      assignments = ids.map(() => (groupResult as any).cluster || 0);
-    } else {
-      // 予期せぬ形式の場合、全てをクラスタ0に割り当てる
-      assignments = ids.map(() => 0);
+    const rootCluster = tree.group(3); // Get the root Cluster object for 3 clusters
+    assignments = new Array(ids.length).fill(-1); // -1は未割り当てまたはノイズ
+
+    if (rootCluster && Array.isArray(rootCluster.children)) {
+      rootCluster.children.forEach((topLevelCluster: any, clusterIndex: number) => {
+        const clusterIndices = getLeafIndices(topLevelCluster);
+        clusterIndices.forEach((dataIndex: number) => {
+          if (dataIndex >= 0 && dataIndex < ids.length) {
+            assignments[dataIndex] = clusterIndex;
+          }
+        });
+      });
     }
   } catch (e) {
-    // エラーが発生した場合（例: データが少なすぎるなど）は、全てを1つのクラスタとする
-    assignments = ids.map(() => 0);
+    console.error("HAC clustering failed:", e);
+    return [];
   }
 
   const result = formatClusters(ids, assignments);
-  // 結果が空の場合（例: agnesが何も返さない場合）も、全てを1つのクラスタとする
-  if (result.length === 0 && ids.length > 0) {
-    return [ids];
-  }
   return result;
 }
 
@@ -85,16 +91,10 @@ export function performDBSCAN(ids: string[], distanceMatrix: number[][]): string
   if (ids.length === 0) return [];
 
   const dbscan = new DBSCAN();
-  // ダミーの距離行列(0か1)なので、epsilon=0.5 (同じ点以外はクラスタ化されない)
-  // minPoints=2 (2点以上でクラスタ)
-  // この設定では、ほとんどのIDがノイズ(-1)になるはずです。
-  const assignments = dbscan.run(distanceMatrix, 0.5, 2);
+  // Jaccard距離は0-1の範囲なので、epsilon=0.21を試す。minPtsは2のまま。
+  const assignments = dbscan.run(distanceMatrix, 0.21, 2);
   
   const result = formatClusters(ids, assignments);
-  // 結果が空の場合（例: 全てノイズと判定された場合）も、全てを1つのクラスタとする
-  if (result.length === 0 && ids.length > 0) {
-    return [ids];
-  }
   return result;
 }
 

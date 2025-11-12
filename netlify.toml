@@ -1,4 +1,3 @@
 [build]
   node_version = "18"
-  publish = "."
   command = "next build"

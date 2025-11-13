@@ -341,20 +341,22 @@ export default function Home() {
 
     addLog({
       type: "info",
-      content:
-        "[CMD] 階層的クラスタリング(HAC)を実行中... [工事中（不具合あり）]",
+      content: "[CMD] 階層的クラスタリング(HAC)を実行中...",
     });
     await sleep(500);
     const hacResult = performHAC(clusteredIds, matrix);
     console.log("HAC Result (before addLog):", hacResult); // DEBUG LOG
     addLog({ type: "hac", content: hacResult });
 
-    await sleep(500);
-    addLog({ type: "info", content: "[CMD] DBSCANクラスタリングを実行中..." });
-    await sleep(500);
-    const dbscanResult = performDBSCAN(clusteredIds, matrix);
-    console.log("DBSCAN Result (before addLog):", dbscanResult); // DEBUG LOG
-    addLog({ type: "dbscan", content: dbscanResult });
+    // await sleep(500);
+    // addLog({
+    //   type: "info",
+    //   content: "[CMD] DBSCANクラスタリングを実行中... [工事中（不具合あり）]",
+    // });
+    // await sleep(500);
+    // const dbscanResult = performDBSCAN(clusteredIds, matrix);
+    // console.log("DBSCAN Result (before addLog):", dbscanResult); // DEBUG LOG
+    // addLog({ type: "dbscan", content: dbscanResult });
 
     setClusteringPerformed(true);
     setIsLoading(false);
@@ -382,7 +384,7 @@ export default function Home() {
                 <p>[OK] {entry.content.length}個のユニークIDを検出:</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm p-2">
                   {entry.content.slice(0, 20).map((id: string) => (
-                    <span key={id}>ID:{id}</span>
+                    <span key={id}>ID:{id}&nbsp;</span>
                   ))}
                 </div>
                 {entry.content.length > 20 && (
@@ -449,7 +451,7 @@ export default function Home() {
                 {Array.isArray(entry.content) && entry.content.length > 0 ? (
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm p-2 border-l-2 border-gray-700">
                     {entry.content.map((id: string) => (
-                      <span key={id}>ID:{id}</span>
+                      <span key={id}>ID:{id}&nbsp;</span>
                     ))}
                   </div>
                 ) : (
@@ -575,7 +577,7 @@ const RenderClusters = ({
             </p>
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs border-l-2 border-gray-700 pl-2">
               {cluster.map((id) => (
-                <span key={id}>ID:{id}</span>
+                <span key={id}>ID:{id}&nbsp;</span>
               ))}
             </div>
           </div>
